@@ -1,13 +1,66 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Sidebar from "../components/sidebar";
 import Header from "../components/header";
 import "./dashboard.css";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(true);
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // Session validation on mount and visibility change
+  useEffect(() => {
+    const checkSession = () => {
+      if (status === "unauthenticated") {
+        // User is not authenticated, redirect to login
+        router.replace("/login");
+      }
+    };
+
+    // Check session on mount
+    checkSession();
+
+    // Check session when user returns to the tab (e.g., after pressing back button)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkSession();
+      }
+    };
+
+    // Check session when page gains focus
+    const handleFocus = () => {
+      checkSession();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [status, router]);
+
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (status === "unauthenticated") {
+    return null;
+  }
 
   return (
     <div className="d-flex flex-column" style={{ height: '100vh' }}>
@@ -15,10 +68,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
       </div>
       <div className="d-flex flex-grow-1" style={{ marginTop: '72px', overflow: 'hidden' }}>
-        <div style={{ height: '100%', overflow: 'auto' }}>
-          <Sidebar isOpen={menuOpen} />
-        </div>
-        <div className="flex-grow-1 p-3 background" style={{ height: '100%', overflow: 'auto' }}>
+        <Sidebar isOpen={menuOpen} />
+        <div className="flex-grow-1 p-3 px-4 background" style={{ height: '100%', overflow: 'auto' }}>
           {children}
         </div>
       </div>

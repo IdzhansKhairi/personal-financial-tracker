@@ -22,29 +22,7 @@ import Image from 'next/image'
 import Link from "next/link"
 import React from "react";
 
-// Ant Side bar Related"
-// -------------------------------------------------------------------------------------------------------------
 const { Sider } = Layout;
-
-const items2: MenuProps['items'] = [UserOutlined, LaptopOutlined, NotificationOutlined].map(
-  (icon, index) => {
-    const key = String(index + 1);
-
-    return {
-      key: `sub${key}`,
-      icon: React.createElement(icon),
-      label: `subnav ${key}`,
-      children: Array.from({ length: 4 }).map((_, j) => {
-        const subKey = index * 4 + j + 1;
-        return {
-          key: subKey,
-          label: `option${subKey}`,
-        };
-      }),
-    };
-  },
-);
-// -------------------------------------------------------------------------------------------------------------
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -88,6 +66,12 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     icon: <DashboardOutlined />,
     label: <Link href="/dashboard" className="text-decoration-none">Dashboard</Link>
   });
+
+  // sidebarItems.push({
+  //   key: 'registerGroup',
+  //   label: 'Registration',
+  //   type: 'group',
+  // })
 
   // Visitor Management
   const visitorChildren: MenuProps['items'] = [];
@@ -139,6 +123,75 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     });
   }
 
+  sidebarItems.push({
+    key: 'financeGroup',
+    label: 'Finance',
+    type: 'group',
+  })
+
+  // Financial Tracker Apps Related:
+  // --------------------------------------------------------------------------------------------
+
+  if(canAccess("/dashboard/finance-dashboard")) {
+    sidebarItems.push({
+      key: 'finance-dashboard',
+      icon: <DashboardOutlined />,
+      label: <Link href="/dashboard/finance-dashboard" className="text-decoration-none">Dashboard Finance</Link>
+    })
+  }
+
+  const transactionsChildren: MenuProps['items'] = [];
+  if(canAccess("/dashboard/add-transaction")) {
+    transactionsChildren.push({
+      key: 'add-transaction',
+      icon: <i className='bi bi-currency-dollar'></i>,
+      label: <Link href="/dashboard/add-transaction" className='text-decoration-none'>Add Transaction</Link>
+    })
+  }
+  if(canAccess("/dashboard/transaction-record")) {
+    transactionsChildren.push({
+      key: 'transaction-record',
+      icon: <i className='bi bi-table'></i>,
+      label: <Link href="/dashboard/transaction-record" className='text-decoration-none'>Transaction Records</Link>
+    })
+  }
+  if(transactionsChildren.length > 0) {
+    sidebarItems.push({
+      key: 'transactions',
+      icon: <i className='bi bi-journal-text'></i>,
+      label: <span>Transactions</span>,
+      children: transactionsChildren
+    })
+  }
+  
+  const budgetingChildren: MenuProps['items'] = [];
+  if(canAccess("/dashboard/commitment")) {
+    budgetingChildren.push({
+      key: 'commitment',
+      icon: <i className='bi bi-cash-stack'></i>,
+      label: <Link href="/dashboard/commitment" className='text-decoration-none'>Commitments</Link>
+    })
+  }
+  if(canAccess("/dashboard/commitment")) {
+    budgetingChildren.push({
+      key: 'wishlist',
+      icon: <i className='bi bi-gift'></i>,
+      label: <Link href="/dashboard/wishlist" className='text-decoration-none'>Wishlists</Link>
+    })
+  }
+  if(budgetingChildren.length > 0) {
+    sidebarItems.push({
+      key: 'budgeting',
+      icon: <i className='bi bi-wallet2'></i>,
+      label: <span>Budgeting</span>,
+      children: budgetingChildren
+    })
+  }
+  
+  // --------------------------------------------------------------------------------------------
+
+
+
   const getLinkClass = (path: string) =>
     pathname === path 
       ? "sidebar-link active" : "sidebar-link";
@@ -155,7 +208,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             theme="dark"
             items={sidebarItems}
           />
-
       </Sider>
     </div>
 

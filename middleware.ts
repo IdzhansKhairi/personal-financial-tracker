@@ -15,28 +15,6 @@ function canAccessPath(roles: string[], pathname: string): boolean {
   return false;
 }
 
-// export default withAuth({
-//   callbacks: {
-//     authorized: ({ token, req }) => {
-//       const path = req.nextUrl.pathname;
-
-//       // Public routes
-//       if (path === "/login" || path === "/unauthorized") return true;
-
-//       // User must be authenticated
-//       if (!token) return false;
-
-//       if (path === "/dashboard") return true;
-      
-//       // Check role-based access
-//       const roles = (token as any).roles || [];
-//       const hasAccess = canAccessPath(roles, path);
-
-//       return hasAccess;
-//     },
-//   },
-// });
-
 export default withAuth(
   function middleware(req) {
     const path = req.nextUrl.pathname;
@@ -48,7 +26,12 @@ export default withAuth(
 
     // Dashboard root - allow authenticated users
     if (path === "/dashboard") {
-      return NextResponse.next();
+      const response = NextResponse.next();
+      // Add no-cache headers to prevent browser caching
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      return response;
     }
 
     // Check role-based access for subpaths
@@ -60,7 +43,12 @@ export default withAuth(
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    return NextResponse.next();
+    // Add no-cache headers to all protected routes
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   },
   {
     callbacks: {

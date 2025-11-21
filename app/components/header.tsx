@@ -53,26 +53,30 @@ export default function header({ menuOpen, setMenuOpen }: HeaderProps) {
                     timer: 3000,
                     didOpen: async () => {
                         Swal.showLoading();
-                        // Clear the session and cookie DURING the loading
-                        // await signOut({ redirect: false });
                     },
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     showConfirmButton: false
                 }).then(async (result) => {
+                    // Clear the session and cookie
+                    await signOut({ redirect: false });
+
                     Swal.fire({
                         icon: 'success',
                         title: 'Successfully logged out!',
                         allowOutsideClick: false,
                         allowEscapeKey: false,
-                        confirmButtonText: "Yes",
-                    }).then(async (result) => {
-                        // Clear the session and cookie DURING the loading
-                        await signOut({ redirect: false });
-                        // AFTER the 3000ms timer and signOut completes, redirect to login
-                        router.push("/login");
+                        confirmButtonText: "OK",
+                    }).then(() => {
+                        // Use router.replace instead of router.push to prevent back navigation
+                        router.replace("/login");
+
+                        // Clear browser history state to prevent back button access
+                        if (window.history && window.history.pushState) {
+                            window.history.pushState(null, '', '/login');
+                            window.history.replaceState(null, '', '/login');
+                        }
                     })
-                    
                 })
             }
         })
@@ -129,7 +133,7 @@ export default function header({ menuOpen, setMenuOpen }: HeaderProps) {
                     
                     <div className="d-flex align-items-center ms-2">
                         <Image className="me-3" src="/images/jpph_logo.png" alt="Example Logo" width={40} height={40}></Image>
-                        <h5 className="text-white medium p-0, m-0"><strong>JPPH Registration</strong></h5>
+                        <h5 className="text-white medium p-0, m-0"><strong>Dashboard Demo</strong></h5>
                     </div>
                 </div>
 

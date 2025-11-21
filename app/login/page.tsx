@@ -1,9 +1,12 @@
 "use client";
 
+import './login.css'
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import Image from 'next/image'
+
 
 export default function LoginPage() {
   
@@ -13,6 +16,7 @@ export default function LoginPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // If NextAuth reports an error (eg, providor/authorize failure), go to /unauthorized
   useEffect(() => {
@@ -42,7 +46,6 @@ export default function LoginPage() {
     }
   }
 
-
   // const handleLogin = () => router.push("/dashboard"); // redirect after login
 
   return (
@@ -56,8 +59,26 @@ export default function LoginPage() {
 
       <div className="p-4 border rounded bg-white">
         <h3 className="text-center mb-3">Login</h3>
-        <input className="form-control mb-3" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username"/>
-        <input className="form-control mb-3" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password"/>
+        <input className="form-control mb-3" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !loading && username.trim() && password.trim()) {
+              handleLogin();
+            }
+          }}
+        />
+        
+        <div className="position-relative mb-3 d-flex align-items-center justify-content-end">
+          <input className="form-control pe-5" type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !loading && username.trim() && password.trim()) {
+                handleLogin();
+              }
+            }}
+          />
+          <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"} position-absolute pe-3 eye-password-icon`} onClick={() => setShowPassword(!showPassword)}></i>
+        </div>
+        
+        
         <button className="btn btn-primary w-100" onClick={handleLogin} disabled={ loading || !username.trim() || !password.trim()}>
           {loading ? "Logging in..." : "Login"}
         </button>
