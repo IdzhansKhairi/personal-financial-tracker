@@ -10,6 +10,7 @@ import './addTransaction.css';
 import Swal from 'sweetalert2';
 import { Color } from 'antd/es/color-picker';
 import { CreditCardOutlined } from '@ant-design/icons';
+import Link from 'next/link';
 
 // Type for account balance from database
 interface AccountBalance {
@@ -18,6 +19,34 @@ interface AccountBalance {
     account_sub_category: string;
     account_card_type: string | null;
     current_balance: number;
+}
+
+// Type for debt from database
+interface Debt {
+    debt_id: number;
+    debt_type: string;
+    amount: number;
+    status: string;
+}
+
+// Type for commitment from database
+interface Commitment {
+    commitment_id: number;
+    commitment_per_month: number;
+    commitment_status: string;
+}
+
+// Type for transaction from database
+interface Transaction {
+    transaction_id: number;
+    transaction_date: string;
+    transaction_time: string;
+    transaction_description: string;
+    transaction_amount: number;
+    transaction_category: string;
+    transaction_sub_category: string;
+    transaction_income_source: string | null;
+    transaction_expense_usage: string | null;
 }
 
 export default function AddTransactionPage() {
@@ -37,6 +66,17 @@ export default function AddTransactionPage() {
     // Account balances from database
     const [accounts, setAccounts] = useState<AccountBalance[]>([])
     const [isLoadingAccounts, setIsLoadingAccounts] = useState(true)
+
+    // Debts and commitments data
+    const [debts, setDebts] = useState<Debt[]>([])
+    const [commitments, setCommitments] = useState<Commitment[]>([])
+    const [paymentStatuses, setPaymentStatuses] = useState<any[]>([])
+    const [isLoadingDebts, setIsLoadingDebts] = useState(true)
+    const [isLoadingCommitments, setIsLoadingCommitments] = useState(true)
+
+    // Recent transactions
+    const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([])
+    const [showRecentTransactions, setShowRecentTransactions] = useState(true)
 
     const subCategories = {
         e_wallet: [
@@ -83,6 +123,62 @@ export default function AddTransactionPage() {
         }
     };
 
+    // Fetch debts from database
+    const fetchDebts = async () => {
+        try {
+            setIsLoadingDebts(true);
+            const response = await fetch('/api/debts?status=pending');
+            const data = await response.json();
+            setDebts(data);
+        } catch (error) {
+            console.error('Failed to fetch debts:', error);
+        } finally {
+            setIsLoadingDebts(false);
+        }
+    };
+
+    // Fetch commitments from database
+    const fetchCommitments = async () => {
+        try {
+            setIsLoadingCommitments(true);
+            const response = await fetch('/api/commitments');
+            const data = await response.json();
+            setCommitments(data);
+        } catch (error) {
+            console.error('Failed to fetch commitments:', error);
+        } finally {
+            setIsLoadingCommitments(false);
+        }
+    };
+
+    // Fetch commitment payment statuses
+    const fetchPaymentStatuses = async () => {
+        try {
+            const response = await fetch('/api/commitment-payments');
+            const data = await response.json();
+            setPaymentStatuses(data);
+        } catch (error) {
+            console.error('Failed to fetch payment statuses:', error);
+        }
+    };
+
+    // Fetch recent transactions (last 5)
+    const fetchRecentTransactions = async () => {
+        try {
+            const response = await fetch('/api/transactions');
+            const data = await response.json();
+            // Get last 5 transactions, sorted by date and time
+            const sorted = data.sort((a: Transaction, b: Transaction) => {
+                const dateA = new Date(`${a.transaction_date} ${a.transaction_time}`);
+                const dateB = new Date(`${b.transaction_date} ${b.transaction_time}`);
+                return dateB.getTime() - dateA.getTime();
+            }).slice(0, 5);
+            setRecentTransactions(sorted);
+        } catch (error) {
+            console.error('Failed to fetch recent transactions:', error);
+        }
+    };
+
     // Calculate totals by category
     const getEwalletData = () => {
         return accounts
@@ -111,6 +207,63 @@ export default function AddTransactionPage() {
 
     const getGrandTotal = () => {
         return accounts.reduce((sum, acc) => sum + acc.current_balance, 0);
+    };
+
+    // Calculate total payables (money I owe)
+    const getTotalPayables = () => {
+        return debts
+            .filter(d => d.debt_type === 'payable' && d.status === 'pending')
+            .reduce((sum, d) => sum + d.amount, 0);
+    };
+
+    // Calculate unpaid commitments for current month
+    const getUnpaidCommitmentsCount = () => {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        return commitments.filter(c => {
+            if (c.commitment_status !== 'Active') return false;
+
+            // Check if payment status exists for this month
+            const paymentStatus = paymentStatuses.find(
+                ps => ps.commitment_id === c.commitment_id &&
+                      ps.payment_month === currentMonth &&
+                      ps.payment_year === currentYear
+            );
+
+            return !paymentStatus || paymentStatus.payment_status === 0;
+        }).length;
+    };
+
+    // Get today's transactions stats
+    const getTodayStats = () => {
+        const today = new Date().toISOString().split('T')[0];
+        const todayTransactions = recentTransactions.filter(t => t.transaction_date === today);
+
+        const income = todayTransactions
+            .filter(t => t.transaction_income_source !== null)
+            .reduce((sum, t) => sum + t.transaction_amount, 0);
+
+        const expenses = todayTransactions
+            .filter(t => t.transaction_expense_usage !== null)
+            .reduce((sum, t) => sum + t.transaction_amount, 0);
+
+        return {
+            income,
+            expenses,
+            net: income - expenses,
+            count: todayTransactions.length
+        };
+    };
+
+    // Format time from HH:MM to 12-hour format
+    const formatTime = (timeStr: string) => {
+        const [hours, minutes] = timeStr.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${minutes} ${ampm}`;
     };
 
     // Filter out zero values from pie data
@@ -203,6 +356,10 @@ export default function AddTransactionPage() {
     // Fetch accounts on component mount
     useEffect(() => {
         fetchAccounts();
+        fetchDebts();
+        fetchCommitments();
+        fetchPaymentStatuses();
+        fetchRecentTransactions();
     }, []);
 
     // Helper to map form values to database values
@@ -373,8 +530,9 @@ export default function AddTransactionPage() {
                 }
             }
 
-            // Refresh accounts and reset form
+            // Refresh accounts, recent transactions and reset form
             await fetchAccounts();
+            await fetchRecentTransactions();
             resetForm();
 
             Swal.fire({
@@ -396,9 +554,86 @@ export default function AddTransactionPage() {
 
     return (
         <div>
-            <h3 className='text-secondary'>Add Transactions (Income/Expense)</h3>
+            <div className='d-flex align-items-center'>
+                <i className='bi bi-currency-dollar fs-3 text-secondary me-2'></i>
+                <h3 className='text-secondary m-0 p-0'>Add Transactions (Income/Expense)</h3>
+            </div>
 
             <div className='border-bottom my-3'></div>
+
+            {/* Today's Stats Summary Bar */}
+            <div className='row mb-3'>
+                <div className='col-12'>
+                    <div className='card bg-light'>
+                        <div className='card-body py-2'>
+                            <div className='row text-center'>
+                                <div className='col-3'>
+                                    <small className='text-muted'>Today's Income</small>
+                                    <h5 className='mb-0 text-success fw-bold'>+MYR {getTodayStats().income.toFixed(2)}</h5>
+                                </div>
+                                <div className='col-3'>
+                                    <small className='text-muted'>Today's Expenses</small>
+                                    <h5 className='mb-0 text-danger fw-bold'>-MYR {getTodayStats().expenses.toFixed(2)}</h5>
+                                </div>
+                                <div className='col-3'>
+                                    <small className='text-muted'>Net Balance</small>
+                                    <h5 className={`mb-0 fw-bold ${getTodayStats().net >= 0 ? 'text-primary' : 'text-warning'}`}>
+                                        {getTodayStats().net >= 0 ? '+' : ''}MYR {getTodayStats().net.toFixed(2)}
+                                    </h5>
+                                </div>
+                                <div className='col-3'>
+                                    <small className='text-muted'>Transactions</small>
+                                    <h5 className='mb-0 text-secondary fw-bold'>{getTodayStats().count}</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className='row mb-4'>
+                <div className='col-6'>
+                    <div className='card bg-danger text-white'>
+                        <div className='card-body'>
+                            <div className='d-flex justify-content-between align-items-center'>
+                                <div>
+                                    <h6 className='mb-1'>Total Debt (Payables)</h6>
+                                    <h3 className='mb-0'>MYR {getTotalPayables().toFixed(2)}</h3>
+                                    <small>Money you owe</small>
+                                </div>
+                                <i className="bi bi-exclamation-triangle" style={{ fontSize: '3rem', opacity: 0.3 }}></i>
+                            </div>
+                            <div className='mt-3'>
+                                <Link href="/dashboard/debts-tracker" className='btn btn-sm btn-light'>
+                                    <i className="bi bi-arrow-right-circle me-2"></i>
+                                    View Debts
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className='col-6'>
+                    <div className='card bg-warning text-dark'>
+                        <div className='card-body'>
+                            <div className='d-flex justify-content-between align-items-center'>
+                                <div>
+                                    <h6 className='mb-1'>Unpaid Commitments</h6>
+                                    <h3 className='mb-0'>{getUnpaidCommitmentsCount()} items</h3>
+                                    <small>For this month</small>
+                                </div>
+                                <i className="bi bi-calendar-x" style={{ fontSize: '3rem', opacity: 0.3 }}></i>
+                            </div>
+                            <div className='mt-3'>
+                                <Link href="/dashboard/commitment" className='btn btn-sm btn-dark'>
+                                    <i className="bi bi-arrow-right-circle me-2"></i>
+                                    View Commitments
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div className='row'>
                 <div className='col-8'>
@@ -807,7 +1042,69 @@ export default function AddTransactionPage() {
                 </div>
             </div>
 
+            {/* Recent Transactions */}
+            <div className='row'>
+                <div className='col-12'>
+                    <div className='card'>
+                        <div className='card-header d-flex align-items-center justify-content-between p-3'>
+                            <div className='d-flex align-items-center'>
+                                <i className="bi bi-clock-history me-2 text-secondary"></i>
+                                <h5 className='fw-bold text-secondary p-0 m-0'>Recent Transactions</h5>
+                            </div>
+                            <div className='d-flex align-items-center gap-2'>
+                                <button
+                                    className='btn btn-sm btn-outline-secondary'
+                                    onClick={() => setShowRecentTransactions(!showRecentTransactions)}
+                                >
+                                    <i className={`bi bi-chevron-${showRecentTransactions ? 'up' : 'down'}`}></i>
+                                </button>
+                                <Link href="/dashboard/transaction-record" className='btn btn-sm btn-primary'>
+                                    <i className="bi bi-list-ul me-1"></i>
+                                    View All
+                                </Link>
+                            </div>
+                        </div>
+                        {showRecentTransactions && (
+                            <div className='card-body p-3'>
+                                {recentTransactions.length === 0 ? (
+                                    <div className='text-center py-4 text-muted'>
+                                        <i className="bi bi-inbox fs-1"></i>
+                                        <p className='mt-2'>No transactions yet. Add your first transaction above!</p>
+                                    </div>
+                                ) : (
+                                    <div className='list-group list-group-flush'>
+                                        {recentTransactions.map((transaction) => (
+                                            <div key={transaction.transaction_id} className='list-group-item px-0'>
+                                                <div className='d-flex justify-content-between align-items-center'>
+                                                    <div className='d-flex align-items-center gap-3'>
+                                                        <div className={`p-2 rounded ${transaction.transaction_income_source ? 'bg-success' : 'bg-danger'} bg-opacity-10`}>
+                                                            <i className={`bi ${transaction.transaction_income_source ? 'bi-arrow-down-circle text-success' : 'bi-arrow-up-circle text-danger'} fs-4`}></i>
+                                                        </div>
+                                                        <div>
+                                                            <h6 className='mb-0'>{transaction.transaction_description}</h6>
+                                                            <small className='text-muted'>
+                                                                {formatTime(transaction.transaction_time)} • {transaction.transaction_category} ({transaction.transaction_sub_category})
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <div className='text-end'>
+                                                        <h5 className={`mb-0 fw-bold ${transaction.transaction_income_source ? 'text-success' : 'text-danger'}`}>
+                                                            {transaction.transaction_income_source ? '+' : '-'}MYR {transaction.transaction_amount.toFixed(2)}
+                                                        </h5>
+                                                        <small className='text-muted'>{new Date(transaction.transaction_date).toLocaleDateString()}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
         </div>
     )
-    
+
 }

@@ -42,6 +42,54 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
 
+  // Get the active menu key based on current pathname
+  const getActiveKey = (): string[] => {
+    // Map pathnames to menu keys
+    const pathToKey: Record<string, string> = {
+      '/dashboard': 'dashboard',
+      '/dashboard/registration': 'registration',
+      '/dashboard/visitor-list': 'visitor-list',
+      '/dashboard/security-list': 'security-list',
+      '/dashboard/report': 'report',
+      '/dashboard/finance-dashboard': 'finance-dashboard',
+      '/dashboard/add-transaction': 'add-transaction',
+      '/dashboard/transaction-record': 'transaction-record',
+      '/dashboard/commitment': 'commitment',
+      '/dashboard/wishlist': 'wishlist',
+      '/dashboard/debts-tracker': 'debts'
+    };
+
+    const key = pathToKey[pathname];
+    return key ? [key] : ['dashboard'];
+  };
+
+  // Get the parent menu keys that should be open based on current pathname
+  const getOpenKeys = (): string[] => {
+    const openKeys: string[] = [];
+
+    // Visitor Management submenu
+    if (['/dashboard/registration', '/dashboard/visitor-list'].includes(pathname)) {
+      openKeys.push('visitor-management');
+    }
+
+    // Managerial submenu
+    if (['/dashboard/security-list', '/dashboard/report'].includes(pathname)) {
+      openKeys.push('managerial');
+    }
+
+    // Transactions submenu
+    if (['/dashboard/add-transaction', '/dashboard/transaction-record'].includes(pathname)) {
+      openKeys.push('transactions');
+    }
+
+    // Budgeting submenu
+    if (['/dashboard/commitment', '/dashboard/wishlist', '/dashboard/debts-tracker'].includes(pathname)) {
+      openKeys.push('budgeting');
+    }
+
+    return openKeys;
+  };
+
   // Authentication of what does the user can access.
   const canAccess = (path: string) => {
     const roles = (session as any)?.roles || [];
@@ -179,6 +227,13 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       label: <Link href="/dashboard/wishlist" className='text-decoration-none'>Wishlists</Link>
     })
   }
+  if(canAccess("/dashboard/debts-tracker")) {
+    budgetingChildren.push({
+      key: 'debts',
+      icon: <i className='bi bi-person-check'></i>,
+      label: <Link href="/dashboard/debts-tracker" className='text-decoration-none'>Debts</Link>
+    })
+  }
   if(budgetingChildren.length > 0) {
     sidebarItems.push({
       key: 'budgeting',
@@ -202,7 +257,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       <Sider trigger={null} collapsible width={290} className='bg-dark' collapsed={!isOpen}>
         <Menu
             mode="inline"
-            defaultSelectedKeys={['dashboard']}
+            selectedKeys={getActiveKey()}
+            defaultOpenKeys={getOpenKeys()}
             style={{ borderInlineEnd: 0 }}
             className='bg-dark h-100'
             theme="dark"

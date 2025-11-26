@@ -196,6 +196,18 @@ account_balance_table
 commitment_list_table
 - commitment_id
 - commitment_name
+- commitment_description
 - commitment_per_month
 - commitment_per_year
-- 
+- commitment_notes
+- commitment_status (Active - active paying, Pending - in the future commitments. Not start pay yet but maybe in the future, Inactive - No more paying, On Hold - Still paying but like freezed membership and so on)
+
+
+wishlist_list_table
+- wishlist_id
+- wishlist_name
+- wishlist_category (Gunpla, Music, Climbing, Decoration, Technology, Others)
+- Estimate Price
+- URL Link
+- URL Picture
+- wishlist_status (purchased, not_purchased)

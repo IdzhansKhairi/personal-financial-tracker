@@ -9,7 +9,10 @@
     "lint": "eslint",
     "db:setup": "npx tsx scripts/setup-db.ts",
     "db:seed-accounts": "npx tsx scripts/seed-accounts.ts",
-    "db:migrate-expense-category": "npx tsx scripts/migrate-add-expense-category.ts"
+    "db:migrate-expense-category": "npx tsx scripts/migrate-add-expense-category.ts",
+    "db:migrate-commitment-tables": "npx tsx scripts/migrate-add-commitment-tables.ts",
+    "db:migrate-wishlist-table": "npx tsx scripts/migrate-add-wishlist-table.ts",
+    "db:migrate-debts-table": "npx tsx scripts/migrate-add-debts-table.ts"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.6",
