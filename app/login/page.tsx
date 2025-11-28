@@ -3,12 +3,10 @@
 import './login.css'
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Image from 'next/image'
 
-
-export default function LoginPage() {
-
+function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const error = params.get("error");
@@ -95,9 +93,17 @@ export default function LoginPage() {
       </div>
       
 
-      
+
 
     </div>
 
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-3 p-md-5 text-center">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

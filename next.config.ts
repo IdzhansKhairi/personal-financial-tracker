@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Disable experimental features that cause build issues
+  experimental: {
+    // Keep turbopack only for dev mode
+  },
 };
 
 export default nextConfig;
