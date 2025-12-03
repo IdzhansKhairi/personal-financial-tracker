@@ -42,7 +42,6 @@ Personal Financial Tracker is a personal project of mine that focuses on replica
   - [Running the Application](#running-the-application)
 - [Project Structure](#project-structure)
 - [Database Schema](#database-schema)
-- [Roadmap](#roadmap)
 - [Development Notes](#development-notes)
 
 ---
@@ -500,29 +499,6 @@ Tracks items you want to purchase.
 
 ---
 
-## Roadmap
-
-### Planned Features
-- [ ] **Budget planning** - Set monthly budgets per category and track spending
-- [ ] **Recurring transactions** - Automatically log recurring expenses
-- [ ] **Mobile app** - React Native version for iOS and Android
-- [ ] **Multi-currency support** - Track finances in different currencies
-- [ ] **Export to PDF** - Generate monthly/yearly financial reports
-- [ ] **Goal tracking** - Set and monitor savings goals
-- [ ] **Receipt scanning** - Upload receipt images with OCR
-- [ ] **Expense splitting** - Share expenses with others (roommates, couples)
-- [ ] **Dark mode** - Eye-friendly night theme
-- [ ] **Notifications** - Reminders for upcoming commitments
-- [ ] **Data analytics** - Advanced spending insights and predictions
-
-### Recently Completed
-- [x] Migration from SQLite to Supabase
-- [x] User authentication system
-- [x] Responsive design for mobile devices
-- [x] Interactive data visualization with charts
-
----
-
 ## Development Notes
 
 ### Creating a Next.js Project from Scratch
@@ -622,10 +598,6 @@ If you're migrating from SQLite:
    - Use Supabase SQL Editor
    - Or use migration scripts (see `scripts/` folder)
 
----
----
----
----
 ---
 
 <!--
