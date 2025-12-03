@@ -600,6 +600,12 @@ If you're migrating from SQLite:
 
 ---
 
+<p align="center">
+  <sub>Written by Muhammad Idzhans Khairi • Assisted by Claude Code AI</sub>
+</p>
+
+---
+
 <!--
 ===================================================================================
 ORIGINAL SECTIONS BELOW - Kept for reference
